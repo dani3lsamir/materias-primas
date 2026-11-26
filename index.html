@@ -23,12 +23,21 @@
       <div><h1 id="heading">Materias primas</h1>
         <p>Identifica qué materiales usan tus importaciones y cómo se mueven sus referencias de mercado antes de negociar.</p>
         <div class="intro-actions"><button type="button" class="button" id="upload"><span aria-hidden="true">↑</span> Cargar inventario</button><input type="file" id="file" accept=".json,application/json" hidden><button type="button" id="demo" class="text-button">Probar con un ejemplo</button></div>
+        <label class="remember"><input type="checkbox" id="remember"> Recordar inventario en este navegador</label>
       </div>
-      <aside class="data-box" aria-label="Inventario activo"><span class="eyebrow">Inventario activo</span><strong id="dataset-label">Sin inventario cargado</strong><small id="dataset-detail">Abre el JSON de Seshat. Se procesa en esta pestaña.</small><p id="file-message" role="status"></p></aside>
+      <aside class="data-box" aria-label="Inventario activo"><span class="eyebrow">Inventario activo</span><strong id="dataset-label">Sin inventario cargado</strong><small id="dataset-detail">Abre el JSON de Seshat. Se procesa en este navegador.</small><button type="button" class="text-button" id="forget" hidden>Borrar inventario recordado</button><p id="file-message" role="status"></p></aside>
     </section>
     <section class="metrics" id="metrics" aria-label="Resumen del inventario"></section>
     <section id="mercado" aria-labelledby="market-heading">
-      <div class="section-title"><h2 id="market-heading">Mercado y materiales</h2><a href="https://www.worldbank.org/en/research/commodity-markets" target="_blank" rel="noopener">Banco Mundial · Pink Sheet ↗</a></div>
+      <div class="section-title"><h2 id="market-heading">Panel de mercado</h2><a href="https://www.worldbank.org/en/research/commodity-markets" target="_blank" rel="noopener">Banco Mundial · Pink Sheet ↗</a></div>
+      <div id="market-dashboard" class="market-dashboard" aria-label="Referencias de mercado"></div>
+      <section id="market-related" class="card market-related" aria-labelledby="related-heading" hidden>
+        <div class="related-head"><div><h3 id="related-heading" tabindex="-1"></h3><p class="caption" id="related-note"></p></div>
+          <label id="related-filter" hidden>Categoría<select id="related-category"></select></label></div>
+        <div id="related-products"></div>
+        <div class="pagination" id="related-pagination" hidden><button type="button" class="button subtle" id="related-prev">Anterior</button><span id="related-page"></span><button type="button" class="button subtle" id="related-next">Siguiente</button></div>
+      </section>
+      <h3 class="market-detail-title" id="market-history" tabindex="-1">Histórico y materiales</h3>
       <div class="market-grid">
         <article class="card chart-card"><div class="chart-head"><div><label for="series">Referencia de precio</label><select id="series" aria-label="Referencia de precio"></select></div><div><label for="period">Histórico</label><select id="period"><option value="12">12 meses</option><option value="24">24 meses</option><option value="36">36 meses</option></select></div></div>
           <div id="quote" class="quote" aria-live="polite"></div><div id="chart" class="chart"></div>

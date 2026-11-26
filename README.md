@@ -6,7 +6,9 @@ A procurement dashboard for exploring imported products, their material composit
 
 Open the [GitHub Pages site](https://dani3lsamir.github.io/materias-primas/) and select **Cargar inventario** to open a Seshat inventory JSON file. The browser processes the file in memory. GitHub Pages serves the application, the public market series, and a fictional sample inventory.
 
-Search the material explorer to see every material tag in the loaded inventory, its product count, and any benchmark or external reference available. Filter the catalog by material, product family, import stage, or composition evidence. Open a product to see its sources. The simulator estimates the change in unit cost from a user-entered input cost share and price movement.
+The main dashboard shows all monthly benchmarks together. Select a card to open the related categories and products, with the documented model when available and the SKU for every product. Each row explains its material relationship to the benchmark. Search the material explorer to see every material tag in the loaded inventory, its product count, and any benchmark or external reference available.
+
+Select **Recordar inventario en este navegador** to store a copy in this browser and open it automatically on later visits. Use **Borrar inventario recordado** to remove that local copy. Import and export stay in the browser. The simulator estimates the change in unit cost from a user-entered input cost share and price movement.
 
 ## Data sources
 
