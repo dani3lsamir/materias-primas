@@ -131,7 +131,7 @@ function validateSnapshot(value) {
   const strings = (row, keys) => !!row && keys.every(key => typeof row[key] === 'string');
   const listOfStrings = list => Array.isArray(list) && list.every(item => typeof item === 'string');
   if (value?.version !== 1 || typeof value.asOf !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value.asOf)
-      || !Array.isArray(value.products)) throw Error('El archivo no tiene el formato de inventario de Seshat.');
+      || !Array.isArray(value.products)) throw Error('El archivo no tiene el formato esperado de inventario.');
   const codes = new Set();
   for (const row of value.products) {
     if (!strings(row, ['code', 'name', 'family', 'coverage']) || !row.code || codes.has(row.code) || !Object.hasOwn(coverageLabels, row.coverage)
@@ -337,7 +337,12 @@ function openDetail(product) {
   $('detail-code').textContent = [product.code, product.model, categoryOf(product)].filter(Boolean).join(' · ');
   $('detail-name').textContent = product.name;
   const materials = product.observations.map(item => [item.value, [materialLabels[item.level], item.source].filter(Boolean).join(' · ')]);
-  const evidence = product.evidence.map(item => [`${kindLabels[item.kind]} · ${item.ref}`, [stageLabels[item.stage], item.entity, item.date, item.detail].filter(Boolean).join(' · ')]);
+  const evidence = product.evidence.map(item => {
+    const reference = item.kind === 'order' ? item.ref
+      .replace(/^(P\d+) · detalle registrado en [^·]+$/, '$1')
+      .replace(/^(P\d+ · código abreviado .+) en el detalle de [^·]+$/, '$1') : item.ref;
+    return [`${kindLabels[item.kind]} · ${reference}`, [stageLabels[item.stage], item.entity, item.date, item.detail].filter(Boolean).join(' · ')];
+  });
   $('detail-body').replaceChildren(detailGroup('Materiales y fuentes', materials, 'Sin composición específica en las fuentes revisadas.'), detailGroup('Documentos de importación', evidence));
   $('detail').showModal();
 }

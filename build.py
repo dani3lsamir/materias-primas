@@ -52,8 +52,6 @@ def offline_html():
         safe_payload = payload.replace('<', '\\u003c')
         embedded.append(f'<script type="application/json" id="{name}-data">{safe_payload}</script>')
     html = replace_once(html, '</body>', '\n'.join([*embedded, f'<script type="module">{app}</script>', '</body>']))
-    html = replace_once(html, '<a id="offline-link" href="offline.html" download="materias-primas.html">Descargar para usar sin conexión</a>',
-                        '<span>Versión sin conexión</span>')
     return html
 
 

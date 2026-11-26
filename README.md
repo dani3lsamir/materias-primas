@@ -4,7 +4,7 @@ A procurement dashboard for exploring imported products, their material composit
 
 ## Use the dashboard
 
-Open the [GitHub Pages site](https://dani3lsamir.github.io/materias-primas/) and select **Cargar inventario** to open a Seshat inventory JSON file. The browser processes the file in memory. GitHub Pages serves the application, the public market series, and a fictional sample inventory.
+Open the [GitHub Pages site](https://dani3lsamir.github.io/materias-primas/) and select **Cargar inventario** to open your inventory JSON file. The browser processes the file in memory. GitHub Pages serves the application, the public market series, and a fictional sample inventory.
 
 The main dashboard shows all monthly benchmarks together. Select a card to open the related categories and products, with the documented model when available and the SKU for every product. Each row explains its material relationship to the benchmark. Search the material explorer to see every material tag in the loaded inventory, its product count, and any benchmark or external reference available.
 
@@ -12,7 +12,7 @@ Select **Recordar inventario en este navegador** to store a copy in this browser
 
 ## Data sources
 
-- **Products and composition.** The local Seshat export combines import and purchase evidence with documented material fields. The catalog labels material inferred from a description and flags products with unspecified composition.
+- **Products and composition.** The local inventory export combines import and purchase evidence with documented material fields. The catalog labels material inferred from a description and flags products with unspecified composition.
 - **Monthly commodity prices.** The [World Bank Pink Sheet](https://www.worldbank.org/en/research/commodity-markets) provides up to 36 observations per series. Material links identify direct commodity benchmarks, components of an alloy, and indirect indicators.
 - **Copper.** The Pink Sheet workbook describes its copper series as the LME Grade A settlement price. The dashboard uses the World Bank's monthly USD-per-tonne observations. [LME Copper](https://www.lme.com/metals/non-ferrous/lme-copper#Overview) provides the exchange's contract and more recent market data. The LME publishes separate [licensing requirements for public display of its market data](https://www.lme.com/en/market-data/market-data-licensing/data-distribution).
 
