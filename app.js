@@ -17,7 +17,7 @@ const stageLabels = {received: 'Recibido', closed_shipment: 'Embarque cerrado', 
 const stagesConfirmed = new Set(['received', 'closed_shipment', 'declared']);
 const coverageLabels = {recorded: 'Registrada', inferred: 'Inferida', missing: 'Por precisar'};
 const materialLabels = {spec: 'Ficha de proveedor', reference: 'Referencia técnica', master: 'Ficha aduanera', inferred: 'Indicio en descripción'};
-const kindLabels = {packing: 'Lista de empaque', order: 'Línea de pedido', declaration: 'Declaración aduanera', dam: 'DAM provisional', invoice: 'Factura comercial', proforma: 'Proforma vinculada'};
+const kindLabels = {packing: 'Lista de empaque', order: 'Registro de pedido', declaration: 'Declaración aduanera', dam: 'DAM provisional', invoice: 'Factura comercial', proforma: 'Proforma vinculada'};
 const filters = ['search', 'material', 'family', 'stage', 'coverage'];
 const pageSize = 15;
 let snapshot = null;
@@ -100,7 +100,7 @@ function renderAudit() {
   const list = $('audit');
   list.replaceChildren();
   if (!audit || !Number.isInteger(audit.activeOrders) || !Number.isInteger(audit.matchedActiveOrders)) return;
-  list.append(el('p', `${audit.matchedActiveOrders} de ${audit.activeOrders} órdenes activas tienen algún SKU vinculado por documento. La cobertura de líneas puede ser parcial.`));
+  list.append(el('p', `${audit.matchedActiveOrders} de ${audit.activeOrders} órdenes activas tienen algún SKU identificado en un documento o en el registro del pedido. La cobertura por orden puede ser parcial.`));
   if (Array.isArray(audit.activeOrdersWithoutLines) && audit.activeOrdersWithoutLines.every(value => typeof value === 'string') && audit.activeOrdersWithoutLines.length) {
     list.append(el('p', `Órdenes activas sin SKU vinculado: ${audit.activeOrdersWithoutLines.join(', ')}.`));
   }
