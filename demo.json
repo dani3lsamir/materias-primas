@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "asOf": "2026-01-01",
+  "products": [
+    {"code":"EJEMPLO-001","name":"Válvula de control de ejemplo","family":"Válvulas","coverage":"recorded","materials":["Latón","Caucho"],"observations":[{"level":"spec","value":"Cuerpo de latón y junta de caucho","source":"Ficha ficticia A","materials":["Latón","Caucho"]}],"evidence":[{"kind":"order","stage":"received","ref":"Ejemplo A","entity":"","date":"2026-01-01","detail":""}]},
+    {"code":"EJEMPLO-002","name":"Soporte de montaje de ejemplo","family":"Soportes","coverage":"recorded","materials":["Acero inoxidable"],"observations":[{"level":"spec","value":"Acero inoxidable 304","source":"Ficha ficticia B","materials":["Acero inoxidable"]}],"evidence":[{"kind":"packing","stage":"active","ref":"Ejemplo B","entity":"","date":"2026-01-01","detail":""}]},
+    {"code":"EJEMPLO-003","name":"Caja plástica de ejemplo","family":"Carcasas","coverage":"missing","materials":["Plástico sin especificar"],"observations":[{"level":"master","value":"Plástico","source":"Ficha ficticia C","materials":["Plástico sin especificar"]}],"evidence":[{"kind":"invoice","stage":"documented","ref":"Ejemplo C","entity":"","date":"2026-01-01","detail":""}]},
+    {"code":"EJEMPLO-004","name":"Tubo de PVC de ejemplo","family":"Tuberías","coverage":"inferred","materials":["PVC"],"observations":[{"level":"inferred","value":"Tubo de PVC de ejemplo","source":"Nombre del producto","materials":["PVC"]}],"evidence":[{"kind":"declaration","stage":"declared","ref":"Ejemplo D","entity":"","date":"2026-01-01","detail":""}]}
+  ]
+}

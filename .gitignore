@@ -1,0 +1,6 @@
+*.xlsx
+__pycache__/
+*.pyc
+*inventory*.json
+*snapshot*.json
+private/

@@ -1,0 +1,45 @@
+name: Publish dashboard
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 13 5,12 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        if: github.event_name != 'push'
+        with:
+          python-version: '3.12'
+      - name: Refresh public market data
+        if: github.event_name != 'push'
+        run: |
+          python -m pip install openpyxl==3.1.5
+          python update_market.py
+      - uses: actions/configure-pages@v5
+      - name: Stage public assets
+        run: |
+          mkdir _site
+          cp .nojekyll index.html style.css app.js favicon.svg market.json demo.json _site/
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+      - uses: actions/deploy-pages@v4
+        id: deploy
