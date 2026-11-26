@@ -3,38 +3,43 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Analiza los materiales de tu catálogo de importaciones y sigue sus referencias de mercado.">
+  <meta name="description" content="Explora los materiales de tus importaciones, sus referencias de mercado y su efecto en las próximas compras.">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>Materias primas | Inteligencia de compras</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <script src="theme.js"></script>
   <link rel="stylesheet" href="style.css">
   <script src="app.js" type="module"></script>
 </head>
 <body>
+  <a class="skip" href="#inicio">Ir al contenido</a>
   <header class="top"><div class="shell top-inner">
     <a class="brand" href="#inicio"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span> Materias primas</a>
-    <nav aria-label="Secciones"><a href="#mercado">Mercado</a><a href="#catalogo">Catálogo</a><a href="#simulador">Simulador</a></nav>
-    <label class="button upload" for="file" id="upload">Cargar inventario<input type="file" id="file" accept=".json,application/json"></label>
+    <nav aria-label="Secciones"><a href="#mercado">Mercado</a><a href="#materiales">Materiales</a><a href="#catalogo">Productos</a><a href="#simulador">Simulador</a></nav>
+    <select class="theme" id="theme" aria-label="Tema de la página"><option value="system">Sistema</option><option value="light">Claro</option><option value="dark">Oscuro</option></select>
   </div></header>
-  <main class="shell" id="inicio">
+  <main class="shell" id="inicio" tabindex="-1">
     <section class="intro" aria-labelledby="heading">
-      <div><div class="kicker"><span></span> INTELIGENCIA DE COMPRAS</div><h1 id="heading">Materias primas<br><em>de tus importaciones</em></h1>
-        <p>Consulta qué materiales usa cada producto, sigue sus referencias de mercado y calcula cómo un cambio de precio podría afectar una cotización.</p></div>
-      <aside class="data-box" aria-label="Inventario activo"><span class="eyebrow">INVENTARIO ACTIVO</span><strong id="dataset-label">Sin inventario cargado</strong><small id="dataset-detail">Abre el archivo JSON generado por Seshat. Los datos se quedan en esta pestaña.</small><button type="button" id="demo" class="text-button">Probar con un ejemplo</button><p id="file-message" role="status"></p></aside>
+      <div><h1 id="heading">Materias primas</h1>
+        <p>Identifica qué materiales usan tus importaciones y cómo se mueven sus referencias de mercado antes de negociar.</p>
+        <div class="intro-actions"><button type="button" class="button" id="upload"><span aria-hidden="true">↑</span> Cargar inventario</button><input type="file" id="file" accept=".json,application/json" hidden><button type="button" id="demo" class="text-button">Probar con un ejemplo</button></div>
+      </div>
+      <aside class="data-box" aria-label="Inventario activo"><span class="eyebrow">Inventario activo</span><strong id="dataset-label">Sin inventario cargado</strong><small id="dataset-detail">Abre el JSON de Seshat. Se procesa en esta pestaña.</small><p id="file-message" role="status"></p></aside>
     </section>
     <section class="metrics" id="metrics" aria-label="Resumen del inventario"></section>
     <section id="mercado" aria-labelledby="market-heading">
-      <div class="section-title"><div><span class="eyebrow">BANCO MUNDIAL · PINK SHEET</span><h2 id="market-heading">Referencias de mercado</h2></div><a href="https://www.worldbank.org/en/research/commodity-markets" target="_blank" rel="noopener">Fuente y metodología ↗</a></div>
+      <div class="section-title"><h2 id="market-heading">Mercado y materiales</h2><a href="https://www.worldbank.org/en/research/commodity-markets" target="_blank" rel="noopener">Banco Mundial · Pink Sheet ↗</a></div>
       <div class="market-grid">
-        <article class="card chart-card"><div class="chart-head"><div><label for="series">Serie mensual</label><select id="series" aria-label="Serie mensual"></select></div><div><label for="period">Ventana</label><select id="period"><option value="12">12 meses</option><option value="24">24 meses</option><option value="36">36 meses</option></select></div></div>
-          <div id="quote" class="quote" aria-live="polite"></div><div id="chart" class="chart"></div><p class="caption" id="market-note"></p>
+        <article class="card chart-card"><div class="chart-head"><div><label for="series">Referencia de precio</label><select id="series" aria-label="Referencia de precio"></select></div><div><label for="period">Histórico</label><select id="period"><option value="12">12 meses</option><option value="24">24 meses</option><option value="36">36 meses</option></select></div></div>
+          <div id="quote" class="quote" aria-live="polite"></div><div id="chart" class="chart"></div>
+          <div class="chart-source"><p class="caption" id="market-note"></p><div id="market-links"></div></div>
           <details id="series-details"><summary>Ver valores mensuales</summary><div id="series-table" class="series-table"></div></details>
         </article>
-        <article class="card exposure"><h3>Materiales en el catálogo</h3><p>Por SKU. Un mismo producto puede tener varios materiales.</p><div id="exposure-list"></div><div id="relationship"></div></article>
+        <article class="card exposure" id="materiales" aria-labelledby="materials-heading"><h3 id="materials-heading">Todos los materiales</h3><p>SKU donde figura cada material en el inventario.</p><label for="material-search" class="sr-only">Buscar material</label><input id="material-search" type="search" placeholder="Buscar material" autocomplete="off"><div id="materials-count" class="caption" role="status"></div><div id="exposure-list" class="exposure-list"></div><div id="relationship"></div></article>
       </div>
     </section>
     <section id="catalogo" aria-labelledby="catalog-heading">
-      <div class="section-title"><div><span class="eyebrow">PRODUCTOS Y COMPOSICIÓN</span><h2 id="catalog-heading">Catálogo de importación</h2></div><button id="export" type="button" class="button subtle" disabled>Exportar vista CSV</button></div>
+      <div class="section-title"><h2 id="catalog-heading">Catálogo de importación</h2><button id="export" type="button" class="button subtle" disabled>Exportar CSV</button></div>
       <div class="card catalog"><div class="filters">
         <label>Buscar<input id="search" type="search" placeholder="SKU, producto o material" autocomplete="off"></label>
         <label>Material<select id="material"></select></label><label>Familia<select id="family"></select></label>
@@ -45,7 +50,7 @@
       <details class="audit"><summary>Cobertura y criterios de evidencia</summary><div id="audit"></div><p>Una declaración identifica un producto en aduana. La recepción y el cierre se muestran cuando figuran en los registros. Una factura comercial, una lista de empaque o un DAM provisional por sí solos respaldan la presencia documental del producto.</p><p>Los materiales registrados provienen de fichas o del campo aduanero. Los indicios provienen de descripciones. Cuando la evidencia es genérica o falta, la composición queda por precisar.</p></details>
     </section>
     <section id="simulador" aria-labelledby="scenario-heading">
-      <div class="section-title"><div><span class="eyebrow">SENSIBILIDAD DE COSTO</span><h2 id="scenario-heading">Simulador de negociación</h2></div></div>
+      <div class="section-title"><h2 id="scenario-heading">Simulador de negociación</h2></div>
       <div class="card scenario"><div><p>Estima cuánto cambiaría el costo unitario si varía el precio de un insumo y todo lo demás se mantiene constante.</p><div class="scenario-inputs">
         <label>Costo unitario actual (USD)<input type="number" id="cost" placeholder="0,00" min="0.01" step="any"></label>
         <label>Participación del insumo (%)<input type="number" id="share" placeholder="0 a 100" min="0" max="100" step="any"></label>
@@ -54,7 +59,7 @@
       <div class="scenario-output" aria-live="polite"><span class="eyebrow">COSTO UNITARIO SIMULADO</span><strong id="scenario-price">—</strong><small id="scenario-result">Completa los tres valores.</small></div></div>
     </section>
   </main>
-  <footer class="shell"><span>Materias primas</span><span>Inventario local · Referencias en dólares nominales</span></footer>
-  <dialog id="detail"><div class="dialog-head"><div><span id="detail-code" class="eyebrow"></span><h2 id="detail-name"></h2></div><button type="button" id="close-detail" class="button subtle" aria-label="Cerrar detalle">Cerrar</button></div><div id="detail-body"></div></dialog>
+  <footer class="shell"><span>by danielsamir</span><a id="offline-link" href="offline.html" download="materias-primas.html">Descargar para usar sin conexión</a></footer>
+  <dialog id="detail" aria-labelledby="detail-name"><div class="dialog-head"><div><span id="detail-code" class="eyebrow"></span><h2 id="detail-name"></h2></div><button type="button" id="close-detail" class="button subtle" aria-label="Cerrar detalle">Cerrar</button></div><div id="detail-body"></div></dialog>
 </body>
 </html>

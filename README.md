@@ -1,17 +1,23 @@
-# Materias primas
+# Raw Materials Dashboard
 
-Tablero web para cruzar productos de importación, composición y referencias de mercado.
+A procurement dashboard for exploring imported products, their material composition, and commodity price benchmarks. The dashboard is displayed in Spanish.
 
-## Uso
+## Use the dashboard
 
-Abre la web en GitHub Pages y selecciona **Cargar inventario** para abrir el JSON generado por Seshat. El navegador procesa el archivo en memoria. GitHub Pages aloja el código, las series públicas del Banco Mundial y un ejemplo ficticio. El archivo de inventario se conserva en el equipo autorizado.
+Open the [GitHub Pages site](https://dani3lsamir.github.io/materias-primas/) and select **Cargar inventario** to open a Seshat inventory JSON file. The browser processes the file in memory. GitHub Pages serves the application, the public market series, and a fictional sample inventory.
 
-El catálogo muestra la evidencia por SKU y permite filtrar por material, familia, etapa y nivel de composición. El simulador usa la participación del insumo que ingreses y un cambio de precio para estimar el efecto sobre el costo unitario.
+Search the material explorer to see every material tag in the loaded inventory, its product count, and any benchmark or external reference available. Filter the catalog by material, product family, import stage, or composition evidence. Open a product to see its sources. The simulator estimates the change in unit cost from a user-entered input cost share and price movement.
 
-## Referencias de mercado
+## Data sources
 
-El sitio muestra hasta 36 observaciones mensuales por serie del [Banco Mundial, Pink Sheet](https://www.worldbank.org/en/research/commodity-markets). Cada relación identifica si la referencia corresponde al metal, a un componente de la aleación o a un indicador indirecto. GitHub Actions intenta actualizar las series los días 5 y 12 del mes y conserva el despliegue previo si falla la descarga. `update_market.py` también acepta un XLSX oficial con `--xlsx`.
+- **Products and composition.** The local Seshat export combines import and purchase evidence with documented material fields. The catalog labels material inferred from a description and flags products with unspecified composition.
+- **Monthly commodity prices.** The [World Bank Pink Sheet](https://www.worldbank.org/en/research/commodity-markets) provides up to 36 observations per series. Material links identify direct commodity benchmarks, components of an alloy, and indirect indicators.
+- **Copper.** The Pink Sheet workbook describes its copper series as the LME Grade A settlement price. The dashboard uses the World Bank's monthly USD-per-tonne observations. [LME Copper](https://www.lme.com/metals/non-ferrous/lme-copper#Overview) provides the exchange's contract and more recent market data. The LME publishes separate [licensing requirements for public display of its market data](https://www.lme.com/en/market-data/market-data-licensing/data-distribution).
 
-## Desarrollo local
+GitHub Actions attempts to refresh the Pink Sheet series on the 5th and 12th of each month and preserves the existing deployment if the download fails. `update_market.py` also accepts the official workbook through `--xlsx`.
 
-Ejecuta `python -m http.server 8000` desde el directorio del repositorio y abre `http://localhost:8000`. El ejemplo ficticio permite probar la web sin un archivo privado. El flujo de despliegue copia solo los siete archivos públicos enumerados en `pages.yml`.
+## Local development
+
+Run `python build.py` from the repository root. Serve `_site` with `python -m http.server 8000 --directory _site` and open `http://localhost:8000`. Select **Probar con un ejemplo** to use the sample inventory.
+
+Open `_site/offline.html` directly to use the single-file build without a network connection. It includes the market snapshot and sample inventory. Load your own inventory JSON with **Cargar inventario**. The build reads a fixed list of public source files and rejects additional files in its output directory.

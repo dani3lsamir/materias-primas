@@ -24,6 +24,7 @@ let snapshot = null;
 let markets = [];
 let monthlyChange = null;
 let filtered = [];
+let materialCounts = new Map();
 let page = 0;
 let loadRequest = 0;
 
@@ -43,6 +44,45 @@ const relationships = {
 };
 for (const material of ['ABS','PVC','CPVC','PBT','PEI','PPO','Policarbonato','Polietileno','Polipropileno','Poliuretano','Poliéster','Nailon','Plástico sin especificar']) {
   relationships[material] = [['brent', 'Señal indirecta de energía y petroquímica. No mide el precio de esta resina.']];
+}
+
+const lmeCopper = ['LME Copper · consulta diaria', 'https://www.lme.com/metals/non-ferrous/lme-copper#Overview'];
+const lmeMetals = ['LME · precios oficiales', 'https://www.lme.com/en/market-data/reports-and-data/lme-official-prices'];
+const lmeSteel = ['LME · referencias de acero', 'https://www.lme.com/metals/ferrous'];
+const clay = ['USGS · arcillas y caolín', 'https://www.usgs.gov/centers/national-minerals-information-center/clays-statistics-and-information'];
+const silica = ['USGS · sílice industrial', 'https://www.usgs.gov/centers/national-minerals-information-center/silica-statistics-and-information'];
+const resins = ['BLS · índice de resinas de EE. UU.', 'https://fred.stlouisfed.org/series/WPU066'];
+const materialSources = new Map([
+  ['Cobre', [lmeCopper]], ['Latón', [lmeCopper, lmeMetals]], ['Bronce', [lmeCopper, lmeMetals]],
+  ['Zinc', [lmeMetals]], ['Aluminio', [lmeMetals]], ['Aluminio recubierto de cobre (CCA)', [lmeCopper, lmeMetals]],
+  ['Acero', [lmeSteel]], ['Acero inoxidable', [lmeMetals]], ['Hierro', [lmeSteel]],
+  ['Cerámica', [clay]], ['Porcelana', [clay, ['USGS · feldespato', 'https://www.usgs.gov/centers/national-minerals-information-center/feldspar-statistics-and-information']]],
+  ['Fibra óptica', [silica]], ['Fibra de vidrio', [silica]],
+  ['Silicona', [['USGS · silicio como insumo', 'https://www.usgs.gov/centers/national-minerals-information-center/silicon-statistics-and-information']]],
+  ['Vidrio', [['BLS · índice de vidrio plano de EE. UU.', 'https://fred.stlouisfed.org/series/WPU1311']]],
+  ['Papel o cartón', [['BLS · índice de pulpa, papel y afines de EE. UU.', 'https://fred.stlouisfed.org/series/WPU09']]],
+]);
+for (const [material, links] of Object.entries(relationships)) {
+  if (links[0][0] === 'brent') materialSources.set(material, [resins]);
+}
+const marketSources = new Map([
+  ['copper', lmeCopper], ['aluminum', lmeMetals], ['zinc', lmeMetals], ['nickel', lmeMetals], ['tin', lmeMetals], ['iron', lmeSteel],
+]);
+
+function sourceLink([label, href]) {
+  const link = el('a', `${label} ↗`);
+  link.href = href;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  return link;
+}
+
+async function publicData(name) {
+  const embedded = $(`${name}-data`);
+  if (embedded) return JSON.parse(embedded.textContent);
+  const response = await fetch(`${name}.json`);
+  if (!response.ok) throw Error('No se pudieron cargar los datos públicos.');
+  return response.json();
 }
 
 function validateSnapshot(value) {
@@ -70,10 +110,15 @@ function options(id, values, first) {
 function setSnapshot(data, demo = false) {
   snapshot = validateSnapshot(data);
   const products = snapshot.products;
+  materialCounts = new Map();
+  for (const product of products) {
+    for (const material of new Set(product.materials)) materialCounts.set(material, (materialCounts.get(material) ?? 0) + 1);
+  }
   $('dataset-label').textContent = demo ? 'Ejemplo ficticio' : `Inventario del ${snapshot.asOf}`;
   $('dataset-detail').textContent = demo ? 'Carga tu archivo JSON para analizar las importaciones reales.' : 'El inventario está disponible en esta pestaña mientras permanezca abierta.';
-  options('material', [...new Set(products.flatMap(row => row.materials))].sort(order), 'Todos');
+  options('material', [...materialCounts.keys()].sort(order), 'Todos');
   options('family', [...new Set(products.map(row => row.family))].sort(order), 'Todas');
+  $('material-search').value = '';
   resetFilters();
   renderMetrics();
   renderAudit();
@@ -127,28 +172,43 @@ function applyFilters() {
 }
 
 function renderExposure() {
-  const counts = new Map();
-  for (const product of filtered) {
-    for (const material of new Set(product.materials)) counts.set(material, (counts.get(material) ?? 0) + 1);
-  }
-  const ranking = [...counts].sort(([a, n], [b, m]) => m - n || order(a, b)).slice(0, 6);
+  const query = folded($('material-search').value.trim());
+  const ranking = [...materialCounts].filter(([material]) => folded(material).includes(query))
+    .sort(([a, n], [b, m]) => m - n || order(a, b));
+  $('materials-count').textContent = snapshot ? `${ranking.length} de ${materialCounts.size} materiales` : '';
+  $('material-search').disabled = !snapshot;
+  const selected = $('material').value;
   $('exposure-list').replaceChildren();
-  if (!ranking.length) $('exposure-list').append(el('p', snapshot ? 'Sin materiales identificados en esta vista.' : 'Carga un inventario para ver los materiales más frecuentes.', 'empty'));
+  if (!ranking.length) $('exposure-list').append(el('p', snapshot ? 'Sin coincidencias.' : 'Carga el inventario o abre el ejemplo para ver los materiales.', 'empty'));
   for (const [material, count] of ranking) {
     const button = el('button', '', 'bar-button');
+    button.dataset.material = material;
+    button.setAttribute('aria-pressed', selected === material);
     const meter = el('meter');
-    meter.max = filtered.length;
+    meter.max = snapshot.products.length;
     meter.value = count;
-    meter.setAttribute('aria-label', `${count} de ${filtered.length} productos`);
+    meter.setAttribute('aria-hidden', 'true');
     button.append(el('span', material), el('strong', numbers.format(count)), meter);
-    button.addEventListener('click', () => { $('material').value = material; applyFilters(); });
+    button.addEventListener('click', () => {
+      $('material').value = material;
+      const first = Object.hasOwn(relationships, material) ? relationships[material][0] : null;
+      if (first && markets.some(market => market.id === first[0])) {
+        $('series').value = first[0];
+        renderMarket();
+      }
+      applyFilters();
+      [...$('exposure-list').children].find(item => item.dataset.material === material)?.focus({preventScroll: true});
+    });
     $('exposure-list').append(button);
   }
-  const selected = $('material').value;
   $('relationship').replaceChildren();
   if (!selected) return;
   const group = el('div', '', 'relationship');
-  group.append(el('strong', selected));
+  const header = el('div', '', 'relationship-head');
+  const productsLink = el('a', 'Ver productos ↓');
+  productsLink.href = '#catalogo';
+  header.append(el('strong', selected), productsLink);
+  group.append(header);
   for (const [id, note] of Object.hasOwn(relationships, selected) ? relationships[selected] : []) {
     const market = markets.find(row => row.id === id);
     if (!market) continue;
@@ -158,7 +218,12 @@ function renderExposure() {
     line.append(button, document.createTextNode(` · ${note}`));
     group.append(line);
   }
-  if (group.childElementCount === 1) group.append(el('p', 'Sin serie vinculada en el tablero.'));
+  if (group.childElementCount === 1) group.append(el('p', 'Sin serie de precio vinculada. Consulta la ficha del producto y el grado del material.'));
+  for (const source of materialSources.get(selected) ?? []) {
+    const line = el('div', '', 'relation-source');
+    line.append(sourceLink(source));
+    group.append(line);
+  }
   $('relationship').append(group);
 }
 
@@ -258,17 +323,17 @@ function drawChart(values, label, unit) {
   const plot = svg('svg', {viewBox: '0 0 606 176', role: 'img', 'aria-label': `Serie mensual de ${label} en ${unit}`});
   for (let i = 0; i < 4; i++) {
     const pos = 19 + i * 42;
-    plot.append(svg('line', {x1: 61, x2: 574, y1: pos, y2: pos, stroke: '#393d3b'}),
-      svg('text', {x: 53, y: pos + 4, fill: '#b7b8af', 'font-size': 11, 'text-anchor': 'end'}, numbers.format(bottom + range * (1 - i / 3))));
+    plot.append(svg('line', {x1: 61, x2: 574, y1: pos, y2: pos, class: 'chart-grid'}),
+      svg('text', {x: 53, y: pos + 4, class: 'chart-label', 'text-anchor': 'end'}, numbers.format(bottom + range * (1 - i / 3))));
   }
   const points = values.map(([, value], i) => `${x(i)},${y(value)}`);
-  plot.append(svg('polygon', {points: `${x(0)},145 ${points.join(' ')} ${x(values.length - 1)},145`, fill:'#f1b579', opacity: .12}),
-    svg('polyline', {points: points.join(' '), fill: 'none', stroke:'#f1b579', 'stroke-width': 2.5, 'stroke-linejoin': 'round'}));
+  plot.append(svg('polygon', {points: `${x(0)},145 ${points.join(' ')} ${x(values.length - 1)},145`, class: 'chart-area'}),
+    svg('polyline', {points: points.join(' '), class: 'chart-line', 'stroke-width': 2.5, 'stroke-linejoin': 'round'}));
   for (const index of [0, Math.floor((values.length - 1) / 2), values.length - 1]) {
-    plot.append(svg('text', {x: x(index), y: 166, fill: '#b7b8af', 'font-size': 11, 'text-anchor': 'middle'}, month(values[index][0])));
+    plot.append(svg('text', {x: x(index), y: 166, class: 'chart-label', 'text-anchor': 'middle'}, month(values[index][0])));
   }
   values.forEach(([date, value], index) => {
-    const point = svg('circle', {cx: x(index), cy: y(value), r: index === values.length - 1 ? 4.5 : 3, fill:'#f1b579'});
+    const point = svg('circle', {cx: x(index), cy: y(value), r: index === values.length - 1 ? 5 : 2.6, class: 'chart-point'});
     point.append(svg('title', {}, `${month(date)} · ${numbers.format(value)} ${unit}`));
     plot.append(point);
   });
@@ -287,7 +352,10 @@ function renderMarket() {
   const move = monthlyChange === null ? 'Variación mensual no disponible' : `${signed(monthlyChange)} mensual`;
   $('quote').replaceChildren(el('strong', numbers.format(amount)), el('small', market.unit), el('small', move, `change ${monthlyChange > 0 ? 'up' : monthlyChange < 0 ? 'down' : ''}`));
   drawChart(values, market.label, market.unit);
-  $('market-note').textContent = `Último promedio publicado: ${month(date)} · ${market.label} (${market.unit}).`;
+  const marketLabel = market.id === 'copper' ? 'Cobre LME grado A · liquidación' : market.label;
+  $('market-note').textContent = `${month(date)} · ${marketLabel} · promedio mensual`;
+  const source = marketSources.get(market.id);
+  $('market-links').replaceChildren(...(source ? [sourceLink(source)] : []));
   const [grid, body] = table(['Mes', market.unit]);
   for (const [key, value] of [...values].reverse()) {
     const row = el('tr');
@@ -312,6 +380,7 @@ function renderScenario() {
   $('scenario-result').textContent = Number.isFinite(estimate) ? `${signed(impact)} sobre el costo unitario de ${money.format(cost)}.` : 'El resultado excede el rango admitido.';
 }
 
+$('upload').addEventListener('click', () => $('file').click());
 $('file').addEventListener('change', async event => {
   const file = event.target.files[0];
   if (!file) return;
@@ -331,15 +400,14 @@ $('demo').addEventListener('click', async () => {
   const request = ++loadRequest;
   $('file').value = '';
   try {
-    const response = await fetch('demo.json');
-    if (!response.ok) throw Error('No se pudo abrir el ejemplo.');
-    const data = await response.json();
+    const data = await publicData('demo');
     if (request !== loadRequest) return;
     setSnapshot(data, true);
     $('file-message').textContent = '';
   } catch (error) { if (request === loadRequest) $('file-message').textContent = error.message; }
 });
 for (const id of filters) $(id).addEventListener(id === 'search' ? 'input' : 'change', applyFilters);
+$('material-search').addEventListener('input', renderExposure);
 for (const id of ['series', 'period']) $(id).addEventListener('change', renderMarket);
 for (const id of ['cost', 'share', 'change']) $(id).addEventListener('input', renderScenario);
 $('reset').addEventListener('click', resetFilters);
@@ -354,9 +422,7 @@ options('family', [], 'Todas');
 renderMetrics();
 applyFilters();
 try {
-  const response = await fetch('market.json');
-  if (!response.ok) throw Error('Market data unavailable');
-  markets = (await response.json()).series;
+  markets = (await publicData('market')).series;
   $('series').replaceChildren(...markets.map(row => new Option(row.label, row.id)));
   renderMarket();
   renderExposure();

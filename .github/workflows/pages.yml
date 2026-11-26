@@ -32,10 +32,8 @@ jobs:
           python -m pip install openpyxl==3.1.5
           python update_market.py
       - uses: actions/configure-pages@v5
-      - name: Stage public assets
-        run: |
-          mkdir _site
-          cp .nojekyll index.html style.css app.js favicon.svg market.json demo.json _site/
+      - name: Build Pages and offline HTML
+        run: python build.py
       - uses: actions/upload-pages-artifact@v4
         with:
           path: _site
