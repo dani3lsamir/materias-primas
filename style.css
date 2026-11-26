@@ -428,14 +428,19 @@ main>section+section {
 
 .chart-head {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   align-items: end;
   justify-content: space-between;
 }
 
 .chart-head>div:first-child {
-  width: min(65%,320px);
+  flex: 1 1 145px;
+  max-width: 320px;
+  min-width: 0;
 }
+
+#market-links { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 
 label,.chart-head label {
   display: block;

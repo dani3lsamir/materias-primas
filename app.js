@@ -9,6 +9,8 @@ const numbers = new Intl.NumberFormat('es-BO', {maximumFractionDigits: 2});
 const money = new Intl.NumberFormat('es-BO', {style: 'currency', currency: 'USD', maximumFractionDigits: 4});
 const monthFmt = new Intl.DateTimeFormat('es-BO', {month: 'short', year: 'numeric', timeZone: 'UTC'});
 const month = value => monthFmt.format(new Date(`${value}-01T00:00:00Z`));
+const dayFmt = new Intl.DateTimeFormat('es-BO', {day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC'});
+const day = value => dayFmt.format(new Date(`${value}T00:00:00Z`));
 const signed = value => `${value > 0 ? '+' : ''}${numbers.format(value)} %`;
 const folded = value => value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 const order = (a, b) => a.localeCompare(b, 'es');
@@ -22,7 +24,10 @@ const filters = ['search', 'material', 'family', 'stage', 'coverage'];
 const pageSize = 15;
 let snapshot = null;
 let markets = [];
-let monthlyChange = null;
+let dailyMarkets = new Map();
+let chartMarket = '';
+let chartFrequency = '';
+let marketChange = null;
 let filtered = [];
 let materialCounts = new Map();
 let marketProducts = new Map();
@@ -369,7 +374,7 @@ function svg(tag, fields, value = '') {
   return node;
 }
 
-function drawChart(values, label, unit) {
+function drawChart(values, label, unit, dateLabel) {
   const min = Math.min(...values.map(([, value]) => value));
   const max = Math.max(...values.map(([, value]) => value));
   const pad = (max - min || max * .05) * .12;
@@ -386,19 +391,23 @@ function drawChart(values, label, unit) {
   const points = values.map(([, value], i) => `${x(i)},${y(value)}`);
   plot.append(svg('polygon', {points: `${x(0)},145 ${points.join(' ')} ${x(values.length - 1)},145`, class: 'chart-area'}),
     svg('polyline', {points: points.join(' '), class: 'chart-line', 'stroke-width': 2.5, 'stroke-linejoin': 'round'}));
-  for (const index of [0, Math.floor((values.length - 1) / 2), values.length - 1]) {
-    plot.append(svg('text', {x: x(index), y: 166, class: 'chart-label', 'text-anchor': 'middle'}, month(values[index][0])));
+  for (const index of new Set([0, Math.floor((values.length - 1) / 2), values.length - 1])) {
+    plot.append(svg('text', {x: x(index), y: 166, class: 'chart-label', 'text-anchor': 'middle'}, dateLabel(values[index][0])));
   }
   values.forEach(([date, value], index) => {
     const point = svg('circle', {cx: x(index), cy: y(value), r: index === values.length - 1 ? 5 : 2.6, class: 'chart-point'});
-    point.append(svg('title', {}, `${month(date)} · ${numbers.format(value)} ${unit}`));
+    point.append(svg('title', {}, `${dateLabel(date)} · ${numbers.format(value)} ${unit}`));
     plot.append(point);
   });
   $('chart').replaceChildren(plot);
 }
 
-function recentMarket(market) {
+function recentMarket(market, daily = false) {
   const [date, amount] = market.values.at(-1);
+  if (daily) {
+    const previous = market.values.at(-2)?.[1];
+    return {date, amount, change: previous ? (amount / previous - 1) * 100 : null};
+  }
   const previousDate = new Date(`${date}-01T00:00:00Z`);
   previousDate.setUTCMonth(previousDate.getUTCMonth() - 1);
   const previous = market.values.find(([key]) => key === previousDate.toISOString().slice(0, 7))?.[1];
@@ -411,16 +420,17 @@ function changeStyle(value) {
 
 function renderDashboard() {
   $('market-dashboard').replaceChildren(...markets.map(market => {
-    const {date, amount, change} = recentMarket(market);
+    const daily = dailyMarkets.get(market.id);
+    const {date, amount, change} = recentMarket(daily ?? market, !!daily);
     const card = el('button', '', 'market-card');
     card.dataset.series = market.id;
     card.setAttribute('aria-pressed', $('series').value === market.id);
     card.setAttribute('aria-controls', 'market-related');
     const title = el('span', '', 'market-card-title');
-    title.append(el('strong', market.label), el('small', month(date)));
+    title.append(el('strong', market.label), el('small', daily ? `Diario · ${day(date)}` : `Mensual · ${month(date)}`));
     const value = el('span', '', 'market-card-value');
-    value.append(el('strong', numbers.format(amount)), el('small', market.unit));
-    const move = el('span', change === null ? 'Variación no disponible' : `${signed(change)} mensual`, changeStyle(change));
+    value.append(el('strong', numbers.format(amount)), el('small', (daily ?? market).unit));
+    const move = el('span', change === null ? 'Variación no disponible' : `${signed(change)} ${daily ? 'vs. dato anterior' : 'mensual'}`, changeStyle(change));
     const matches = marketProducts.get(market.id) ?? [];
     const summary = el('span', '', 'market-card-products');
     if (snapshot) {
@@ -433,6 +443,7 @@ function renderDashboard() {
     card.append(title, value, move, summary);
     card.addEventListener('click', () => {
       $('series').value = market.id;
+      chartMarket = '';
       renderMarket();
       const heading = $(snapshot ? 'related-heading' : 'market-history');
       heading.focus({preventScroll: true});
@@ -488,24 +499,45 @@ function renderRelated(id) {
 function renderMarket() {
   const market = markets.find(row => row.id === $('series').value);
   if (!market) return;
-  const values = market.values.slice(-Number($('period').value));
-  const {date, amount, change} = recentMarket(market);
-  monthlyChange = change;
-  const move = monthlyChange === null ? 'Variación mensual no disponible' : `${signed(monthlyChange)} mensual`;
-  $('quote').replaceChildren(el('strong', numbers.format(amount)), el('small', market.unit), el('small', move, changeStyle(monthlyChange)));
-  drawChart(values, market.label, market.unit);
+  const daily = dailyMarkets.get(market.id);
+  $('frequency-control').hidden = !daily;
+  if (chartMarket !== market.id) {
+    chartMarket = market.id;
+    $('frequency').value = daily ? 'daily' : 'monthly';
+  }
+  const isDaily = !!daily && $('frequency').value === 'daily';
+  const series = isDaily ? daily : market;
+  const frequency = isDaily ? 'daily' : 'monthly';
+  if (frequency !== chartFrequency) {
+    chartFrequency = frequency;
+    const windows = isDaily ? [['30 días', '30'], ['90 días', '90'], ['1 año', '366']]
+      : [['12 meses', '12'], ['24 meses', '24'], ['36 meses', '36']];
+    $('period').replaceChildren(...windows.map(([label, value]) => new Option(label, value)));
+  }
+  const {date, amount, change} = recentMarket(series, isDaily);
+  const range = Number($('period').value);
+  const cutoff = isDaily ? new Date(Date.parse(`${date}T00:00:00Z`) - (range - 1) * 86400000).toISOString().slice(0, 10) : '';
+  const values = isDaily ? series.values.filter(([when]) => when >= cutoff) : series.values.slice(-range);
+  const dateLabel = isDaily ? day : month;
+  marketChange = change;
+  const move = marketChange === null ? 'Variación no disponible' : `${signed(marketChange)} ${isDaily ? 'vs. dato anterior' : 'mensual'}`;
+  $('quote').replaceChildren(el('strong', numbers.format(amount)), el('small', series.unit), el('small', move, changeStyle(marketChange)));
+  drawChart(values, market.label, series.unit, dateLabel);
   const marketLabel = market.id === 'copper' ? 'Cobre LME grado A · liquidación' : market.label;
-  $('market-note').textContent = `${month(date)} · ${marketLabel} · promedio mensual`;
-  const source = marketSources.get(market.id);
-  $('market-links').replaceChildren(...(source ? [sourceLink(source)] : []));
-  const [grid, body] = table(['Mes', market.unit]);
+  $('market-note').textContent = isDaily ? `${day(date)} · Dato diario. ${series.description}`
+    : `${month(date)} · ${marketLabel} · promedio mensual`;
+  const sources = [isDaily && [series.publisher, series.source], marketSources.get(market.id)].filter(Boolean);
+  $('market-links').replaceChildren(...sources.map(sourceLink));
+  $('series-values-label').textContent = isDaily ? 'Ver valores diarios' : 'Ver valores mensuales';
+  const [grid, body] = table([isDaily ? 'Fecha' : 'Mes', series.unit]);
   for (const [key, value] of [...values].reverse()) {
     const row = el('tr');
-    row.append(el('td', month(key)), el('td', numbers.format(value)));
+    row.append(el('td', dateLabel(key)), el('td', numbers.format(value)));
     body.append(row);
   }
   $('series-table').replaceChildren(grid);
-  $('use-market').disabled = monthlyChange === null;
+  $('use-market').disabled = marketChange === null;
+  $('use-market').textContent = isDaily ? 'Usar variación diaria de la referencia' : 'Usar variación mensual de la referencia';
   for (const card of $('market-dashboard').children) card.setAttribute('aria-pressed', card.dataset.series === market.id);
   renderRelated(market.id);
 }
@@ -608,7 +640,7 @@ $('related-category').addEventListener('change', () => { relatedPage = 0; render
 $('related-prev').addEventListener('click', () => { relatedPage--; renderRelated(relatedMarket); });
 $('related-next').addEventListener('click', () => { relatedPage++; renderRelated(relatedMarket); });
 $('material-search').addEventListener('input', renderExposure);
-for (const id of ['series', 'period']) $(id).addEventListener('change', renderMarket);
+for (const id of ['series', 'frequency', 'period']) $(id).addEventListener('change', renderMarket);
 for (const id of ['cost', 'share', 'change']) $(id).addEventListener('input', renderScenario);
 $('reset').addEventListener('click', resetFilters);
 $('export').addEventListener('click', exportRows);
@@ -616,13 +648,15 @@ $('prev').addEventListener('click', () => { page--; renderTable(); });
 $('next').addEventListener('click', () => { page++; renderTable(); });
 $('close-detail').addEventListener('click', () => $('detail').close());
 $('detail').addEventListener('click', event => { if (event.target === $('detail')) $('detail').close(); });
-$('use-market').addEventListener('click', () => { $('change').value = monthlyChange.toFixed(3); renderScenario(); });
+$('use-market').addEventListener('click', () => { $('change').value = marketChange.toFixed(3); renderScenario(); });
 options('material', [], 'Todos');
 options('family', [], 'Todas');
 renderMetrics();
 applyFilters();
 try {
-  markets = (await publicData('market')).series;
+  const [monthly, daily] = await Promise.all([publicData('market'), publicData('daily').catch(() => ({series: []}))]);
+  markets = monthly.series;
+  dailyMarkets = new Map(daily.series.map(series => [series.id, series]));
   $('series').replaceChildren(...markets.map(row => new Option(row.label, row.id)));
   renderDashboard();
   renderMarket();

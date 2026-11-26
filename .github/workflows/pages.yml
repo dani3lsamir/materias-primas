@@ -5,6 +5,7 @@ on:
     branches: [main]
   schedule:
     - cron: '23 13 5,12 * *'
+    - cron: '35 22 * * 1-5'
   workflow_dispatch:
 
 permissions:
@@ -29,8 +30,14 @@ jobs:
           python-version: '3.12'
       - name: Refresh public market data
         run: |
+          python -m unittest test_update_daily
           python -m pip install openpyxl==3.1.5
-          python update_market.py
+          if ! python update_market.py; then
+            echo '::warning::Monthly update unavailable. Reusing the last published monthly data.'
+            curl --fail --silent --show-error --location --max-time 20 \
+              https://dani3lsamir.github.io/materias-primas/market.json -o market.json
+          fi
+          python update_daily.py --previous-url https://dani3lsamir.github.io/materias-primas/daily.json
       - uses: actions/configure-pages@v5
       - name: Build Pages and offline HTML
         run: python build.py

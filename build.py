@@ -10,7 +10,7 @@ import shutil
 
 
 ROOT = Path(__file__).resolve().parent
-PUBLIC_ASSETS = ('.nojekyll', 'index.html', 'style.css', 'app.js', 'theme.js', 'favicon.svg', 'market.json', 'demo.json')
+PUBLIC_ASSETS = ('.nojekyll', 'index.html', 'style.css', 'app.js', 'theme.js', 'favicon.svg', 'market.json', 'daily.json', 'demo.json')
 
 
 def asset(name):
@@ -47,7 +47,7 @@ def offline_html():
                         base64.b64encode((ROOT / 'favicon.svg').read_bytes()).decode('ascii') + '">')
 
     embedded = []
-    for name in ('market', 'demo'):
+    for name in ('market', 'daily', 'demo'):
         payload = json.dumps(json.loads(asset(f'{name}.json')), ensure_ascii=False, separators=(',', ':'))
         safe_payload = payload.replace('<', '\\u003c')
         embedded.append(f'<script type="application/json" id="{name}-data">{safe_payload}</script>')

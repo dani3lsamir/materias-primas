@@ -29,7 +29,7 @@
     </section>
     <section class="metrics" id="metrics" aria-label="Resumen del inventario"></section>
     <section id="mercado" aria-labelledby="market-heading">
-      <div class="section-title"><h2 id="market-heading">Panel de mercado</h2><a href="https://www.worldbank.org/en/research/commodity-markets" target="_blank" rel="noopener">Banco Mundial · Pink Sheet ↗</a></div>
+      <div class="section-title"><h2 id="market-heading">Panel de mercado</h2><a href="https://www.worldbank.org/en/research/commodity-markets" target="_blank" rel="noopener">Fuente mensual · Banco Mundial ↗</a></div>
       <div id="market-dashboard" class="market-dashboard" aria-label="Referencias de mercado"></div>
       <section id="market-related" class="card market-related" aria-labelledby="related-heading" hidden>
         <div class="related-head"><div><h3 id="related-heading" tabindex="-1"></h3><p class="caption" id="related-note"></p></div>
@@ -39,10 +39,10 @@
       </section>
       <h3 class="market-detail-title" id="market-history" tabindex="-1">Histórico y materiales</h3>
       <div class="market-grid">
-        <article class="card chart-card"><div class="chart-head"><div><label for="series">Referencia de precio</label><select id="series" aria-label="Referencia de precio"></select></div><div><label for="period">Histórico</label><select id="period"><option value="12">12 meses</option><option value="24">24 meses</option><option value="36">36 meses</option></select></div></div>
+        <article class="card chart-card"><div class="chart-head"><div><label for="series">Referencia de precio</label><select id="series" aria-label="Referencia de precio"></select></div><div id="frequency-control" hidden><label for="frequency">Frecuencia</label><select id="frequency"><option value="daily">Diaria</option><option value="monthly">Mensual</option></select></div><div><label for="period">Histórico</label><select id="period"></select></div></div>
           <div id="quote" class="quote" aria-live="polite"></div><div id="chart" class="chart"></div>
           <div class="chart-source"><p class="caption" id="market-note"></p><div id="market-links"></div></div>
-          <details id="series-details"><summary>Ver valores mensuales</summary><div id="series-table" class="series-table"></div></details>
+          <details id="series-details"><summary id="series-values-label">Ver observaciones</summary><div id="series-table" class="series-table"></div></details>
         </article>
         <article class="card exposure" id="materiales" aria-labelledby="materials-heading"><h3 id="materials-heading">Todos los materiales</h3><p>SKU donde figura cada material en el inventario.</p><label for="material-search" class="sr-only">Buscar material</label><input id="material-search" type="search" placeholder="Buscar material" autocomplete="off"><div id="materials-count" class="caption" role="status"></div><div id="exposure-list" class="exposure-list"></div><div id="relationship"></div></article>
       </div>
@@ -64,7 +64,7 @@
         <label>Costo unitario actual (USD)<input type="number" id="cost" placeholder="0,00" min="0.01" step="any"></label>
         <label>Participación del insumo (%)<input type="number" id="share" placeholder="0 a 100" min="0" max="100" step="any"></label>
         <label>Variación del insumo (%)<input type="number" id="change" placeholder="Ej. 8 o -5" min="-100" step="any"></label>
-      </div><button type="button" class="text-button" id="use-market" disabled>Usar variación mensual de la serie</button></div>
+      </div><button type="button" class="text-button" id="use-market" disabled>Usar variación de la referencia</button></div>
       <div class="scenario-output" aria-live="polite"><span class="eyebrow">COSTO UNITARIO SIMULADO</span><strong id="scenario-price">—</strong><small id="scenario-result">Completa los tres valores.</small></div></div>
     </section>
   </main>
