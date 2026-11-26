@@ -1,10 +1,12 @@
 """Build the public market data from the World Bank's monthly Pink Sheet workbook."""
 
 import argparse
+from html import unescape
 import io
 import json
 from pathlib import Path
 import re
+from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 import openpyxl
@@ -27,13 +29,26 @@ SERIES = {
 
 
 def download():
-    # Follow the current release link so an annual document ID change is harmless.
-    with urlopen(Request(SOURCE, headers={'User-Agent': 'MaterialsDashboard/1'}), timeout=30) as response:
-        page = response.read().decode('utf-8')
-    match = re.search(r'https://thedocs\.worldbank\.org/[^"<>\s]+/CMO-Historical-Data-Monthly\.xlsx', page, re.I)
-    book = match[0] if match else BOOK
-    with urlopen(book, timeout=60) as response:
-        return io.BytesIO(response.read()), book
+    # Follow the current release link and retain the last known workbook as a fallback.
+    headers = {'User-Agent': 'MaterialsDashboard/1', 'Accept': '*/*'}
+    candidates = []
+    try:
+        with urlopen(Request(SOURCE, headers=headers), timeout=30) as response:
+            page = unescape(response.read().decode('utf-8'))
+        candidates.extend(re.findall(r'https://thedocs\.worldbank\.org/[^"<>\s]+/CMO-Historical-Data-Monthly\.xlsx', page, re.I))
+    except (OSError, URLError) as exc:
+        print(f'Could not read the World Bank release page: {exc}')
+    failures = []
+    for book in dict.fromkeys([*candidates, BOOK]):
+        try:
+            with urlopen(Request(book, headers={**headers, 'Referer': SOURCE}), timeout=60) as response:
+                content = response.read(10_000_000)
+            if content.startswith(b'PK\x03\x04'):
+                return io.BytesIO(content), book
+            failures.append(f'{book}: response is not an XLSX workbook')
+        except (OSError, URLError) as exc:
+            failures.append(f'{book}: {exc}')
+    raise RuntimeError('World Bank workbook unavailable: ' + ' | '.join(failures))
 
 
 def generate(workbook, book):

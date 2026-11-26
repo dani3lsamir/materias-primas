@@ -25,6 +25,7 @@ let markets = [];
 let monthlyChange = null;
 let filtered = [];
 let page = 0;
+let loadRequest = 0;
 
 // Links describe the relationship to each specific public series.
 const relationships = {
@@ -148,7 +149,7 @@ function renderExposure() {
   if (!selected) return;
   const group = el('div', '', 'relationship');
   group.append(el('strong', selected));
-  for (const [id, note] of relationships[selected] ?? []) {
+  for (const [id, note] of Object.hasOwn(relationships, selected) ? relationships[selected] : []) {
     const market = markets.find(row => row.id === id);
     if (!market) continue;
     const line = el('div');
@@ -286,7 +287,7 @@ function renderMarket() {
   const move = monthlyChange === null ? 'Variación mensual no disponible' : `${signed(monthlyChange)} mensual`;
   $('quote').replaceChildren(el('strong', numbers.format(amount)), el('small', market.unit), el('small', move, `change ${monthlyChange > 0 ? 'up' : monthlyChange < 0 ? 'down' : ''}`));
   drawChart(values, market.label, market.unit);
-  $('market-note').textContent = `Último promedio publicado: ${month(date)}. ${market.label} en dólares nominales.`;
+  $('market-note').textContent = `Último promedio publicado: ${month(date)} · ${market.label} (${market.unit}).`;
   const [grid, body] = table(['Mes', market.unit]);
   for (const [key, value] of [...values].reverse()) {
     const row = el('tr');
@@ -314,21 +315,29 @@ function renderScenario() {
 $('file').addEventListener('change', async event => {
   const file = event.target.files[0];
   if (!file) return;
+  const request = ++loadRequest;
   try {
     if (file.size > 30 * 1024 * 1024) throw Error('El archivo supera el límite de 30 MB.');
-    setSnapshot(JSON.parse((await file.text()).replace(/^\uFEFF/, '')));
+    const content = await file.text();
+    if (request !== loadRequest) return;
+    setSnapshot(JSON.parse(content.replace(/^\uFEFF/, '')));
     $('file-message').textContent = 'Inventario cargado.';
   } catch (error) {
+    if (request !== loadRequest) return;
     $('file-message').textContent = error instanceof SyntaxError ? 'El archivo no es un JSON válido.' : error.message;
-  } finally { event.target.value = ''; }
+  } finally { if (request === loadRequest) event.target.value = ''; }
 });
 $('demo').addEventListener('click', async () => {
+  const request = ++loadRequest;
+  $('file').value = '';
   try {
     const response = await fetch('demo.json');
     if (!response.ok) throw Error('No se pudo abrir el ejemplo.');
-    setSnapshot(await response.json(), true);
+    const data = await response.json();
+    if (request !== loadRequest) return;
+    setSnapshot(data, true);
     $('file-message').textContent = '';
-  } catch (error) { $('file-message').textContent = error.message; }
+  } catch (error) { if (request === loadRequest) $('file-message').textContent = error.message; }
 });
 for (const id of filters) $(id).addEventListener(id === 'search' ? 'input' : 'change', applyFilters);
 for (const id of ['series', 'period']) $(id).addEventListener('change', renderMarket);
