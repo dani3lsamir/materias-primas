@@ -25,11 +25,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
-        if: github.event_name != 'push'
         with:
           python-version: '3.12'
       - name: Refresh public market data
-        if: github.event_name != 'push'
         run: |
           python -m pip install openpyxl==3.1.5
           python update_market.py
